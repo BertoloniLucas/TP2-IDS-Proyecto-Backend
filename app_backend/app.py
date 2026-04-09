@@ -1,13 +1,16 @@
 from flask import Flask
 from flask_cors import CORS
-#aca deberiamos importar cosas del blueprint
+from app_backend.routes.partidos import partidos_bp
+from app_backend.routes.ranking import rankng_bp
+from app_backend.routes.usuarios import usuarios_bp
 
 
 app = Flask(__name__)
 CORS(app)
 
-#aca el register del blueprint
-
+app.register_blueprint (partidos_bp, url_prefix="/partidos")
+app.register_blueprint (rankng_bp, url_prefix="/ranking")
+app.register_blueprint (usuarios_bp, url_prefix="/usuarios")
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
