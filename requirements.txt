@@ -1,0 +1,8 @@
+Flask
+flask-cors
+requests
+mysql-connector-python
+werkzeug
+
+#para activar el virtual env ponen en la terminal python3 -m venv venv y despues source venv/vin/activate y al lado de su nombre tendria q aparecer (venv)
+#cuando ya tienen el entorno virtual activado ponen en la terminal de aca pip3 install -r requirements.txt y se les descargan todas las librerias que vamos a usar
