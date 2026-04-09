@@ -1,0 +1,50 @@
+#buenas les dejo todo lo que hice mas o menos explicado xq estuve como 3 horas viendo videitos de como hacerlo xq no entiendo mucho la verdad pero como no podia estar queria dejar algo hecho#
+#les dejo esto para los q estan igual de perdidos q yo asi no tienen q andar buscvando en 40 horas d videitos
+#puede q este todo mal pero despues lo corrijo cualquier cosa, lo fui haciendo con unos videos y el final de los links con chatgpt xq lo pedia el swagger y en ningun lado lo vi#
+
+partidos_bp.route es la ruta
+
+conn get_db es lo que conectaria con el MySQL
+
+adentro del try puse todo lo q puede fallar xq tengo entendido q asi no se rompe y va todo al except del final (a chequear)
+
+el cursor = conn.cursor (dictionary=true) crea el cursor osea el q ejecuta sql y pone los diccionarios en vez de tuplas
+
+limit es el limite offset es por donde empieza
+
+equipo = request.args.get ("Equipo") lee el equipo
+
+lo de consulta_partidos es la consulta base y lo que dice WHERE 1=1 entendi q es para usar filtros depsues (a chequear tambien)
+
+parametros es la lista donde se guardan valores para sql
+
+if equipo es si el usuario mando el equipo 
+
+consulta partidos += .... es una cond para el sql 
+
+parametros.extend agrega valores
+
+consulta_cantidad_partidos cuenta cuantos partidos hay con filtros
+
+cursor.execute ejecuta la consulta_partidos
+
+total = cursor.fetchtone trae el resultado 
+
+limit y offset en consulta limitan resultados
+
+lista partidos trae todos los resultados
+
+partidos.append arma el json 
+
+except es si algo falla y devuelve el jsonify
+
+y el finally cierra la conexion
+
+SEGUN CHAT
+en lo de los links el first y el next es q q solo te muestre 10 x pagina
+base url es el host
+build url hace url dinamicas
+el first y el last crean la primera y ultima pagina
+
+
+todo eso ultimo lo pedia el swagger pero yo no tenia ni puta idea de como hacerlo
