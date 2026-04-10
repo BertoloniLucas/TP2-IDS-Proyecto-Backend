@@ -86,7 +86,44 @@ def lista_partidos():
             
 
 
+@partidos_bp.route("/partidos", methods=["POST"])
+def crear_partido():    
+    try:
+        conn = get_connection() #coneccion con la db
+        cursor = conn.cursor (dictionary=True) #El cursor me permite realizar consultas SQL, devuelve diccionarios en vez de tuplas.
+        datos = request.get_json() #obtengo los datos del body solicitado
+        campos = ['equipo_local', 'equipo_visitante', 'fecha', 'fase']
+        
+        if not datos:
+            return (jsonify({'error': 'campos incompletos'}), 400)
+        for campo in campos:
+            if campo not in datos:
+                return (jsonify({'error': '%s no especificado' %campo}), 400)
+        
+        equipo_local = datos.get('equipo_local')
+        equipo_visitante = datos.get('equipo_visitante')
+        fecha = datos.get('fecha')
+        fase = datos.get('fase')
 
+        cursor.execute(
+            """
+            INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase)
+            VALUES (%s, %s, %s, %s)
+            """, (equipo_local, equipo_visitante, fecha, fase)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        #Habria que crear una funcion que se encargue de crear la tarea
+        return jsonify({'mensaje':'Partido agregado correctamente'}), 201
+    except Exception as e:
+        return jsonify({'error': '%s' %e}), 500 
+    finally:
+        cursor.close()
+        conn.close()
+    
         
 
     
