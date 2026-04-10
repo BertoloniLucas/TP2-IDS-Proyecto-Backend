@@ -1,0 +1,3 @@
+#Ignorar el venv
+.venv/
+venv/
