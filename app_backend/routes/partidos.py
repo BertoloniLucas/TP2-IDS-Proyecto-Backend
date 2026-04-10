@@ -111,12 +111,8 @@ def crear_partido():
             VALUES (%s, %s, %s, %s)
             """, (equipo_local, equipo_visitante, fecha, fase)
         )
-
         conn.commit()
-        cursor.close()
-        conn.close()
 
-        #Habria que crear una funcion que se encargue de crear la tarea
         return jsonify({'mensaje':'Partido agregado correctamente'}), 201
     except Exception as e:
         return jsonify({'error': '%s' %e}), 500 
