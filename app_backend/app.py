@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
-from app_backend.routes.partidos import partidos_bp
-from app_backend.routes.ranking import rankng_bp
-from app_backend.routes.usuarios import usuarios_bp
+from routes.partidos import partidos_bp
+from routes.ranking import rankng_bp
+from routes.usuarios import usuarios_bp
 
 
 app = Flask(__name__)
