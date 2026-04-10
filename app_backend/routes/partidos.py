@@ -117,8 +117,10 @@ def crear_partido():
     except Exception as e:
         return jsonify({'error': '%s' %e}), 500 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
     
         
 
