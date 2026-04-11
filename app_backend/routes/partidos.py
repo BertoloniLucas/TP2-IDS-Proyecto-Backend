@@ -143,8 +143,32 @@ def obtener_partido(partido_id):
     except Exception as e:
         return jsonify({'error':'%s' %e}), 500
     finally:
-        if conn is not None:
-            conn.close()
         if cursor is not None:
             cursor.close()
+        if conn is not None:
+            conn.close()
     
+@partidos_bp.route("/<int:partido_id>", methods=["DELETE"])
+def eliminar_partido(partido_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query_eliminar = "DELETE FROM partidos WHERE ID = %s"
+        cursor.execute(query_eliminar, (partido_id,))
+
+        filas_afectadas = cursor.rowcount #verifico si el execute devolvio alguna fila.
+        if filas_afectadas == 0:
+            return jsonify({'error': 'Partido no encontrado'}), 404
+        else:
+            conn.commit()
+            return jsonify({'mensaje': 'Partido eliminado'}), 200
+    except Exception as e:
+        return jsonify({'error': '%s' %e}), 500
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
