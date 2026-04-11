@@ -125,5 +125,27 @@ def crear_partido():
             conn.close()
     
         
+@partidos_bp.route("/<int:partido_id>", methods=["GET"])
+def obtener_partido(partido_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
 
+        query = "SELECT * FROM partidos WHERE ID = %s"
+        cursor.execute(query, (partido_id,))
+        partido = cursor.fetchone()
+
+        if not partido:
+            return jsonify({'error': 'Partido no encontrado'}), 404
+        else:
+            return jsonify(partido), 200
+    except Exception as e:
+        return jsonify({'error':'%s' %e}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+        if cursor is not None:
+            cursor.close()
     
