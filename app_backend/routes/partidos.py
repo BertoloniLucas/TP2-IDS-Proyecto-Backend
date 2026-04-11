@@ -16,7 +16,7 @@ def lista_partidos():
         offset = int (request.args.get("_offset", 0))
 
         consulta_partidos= """
-        SELECT id, equipo_local, equipo_visitante, fecha, fase
+        SELECT ID, equipo_local, equipo_visitante, fecha, fase
         FROM partidos
         WHERE 1=1
         """
@@ -35,11 +35,11 @@ def lista_partidos():
             consulta_partidos += " AND fase = %s"
             valores.append (fase)
 
-        consulta_cantidad_partidos = f"SELECT (*) as total from ({consulta_partidos}) as sub" 
+        consulta_cantidad_partidos = f"SELECT COUNT(*) as total from ({consulta_partidos}) as sub" 
         cursor.execute(consulta_cantidad_partidos, valores) 
         total = cursor.fetchone()["total"]
 
-        consulta_partidos += " LIMIT %s, OFFSET %s"
+        consulta_partidos += " LIMIT %s OFFSET %s"
         valores.extend ([limit, offset])  
 
         cursor.execute (consulta_partidos, valores)
@@ -48,7 +48,7 @@ def lista_partidos():
         partidos = []
         for partido in lista_partidos:
             partidos.append ({
-                "id" : partido["id"],
+                "ID" : partido["ID"],
                 "equipo_local" : partido ["equipo_local"],
                 "equipo_visitante" : partido ["equipo_visitante"],
                 "fecha" : str(partido["fecha"]),
