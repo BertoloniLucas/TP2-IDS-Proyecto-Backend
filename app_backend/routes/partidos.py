@@ -107,12 +107,11 @@ def crear_partido():
         fecha = datos.get('fecha')
         fase = datos.get('fase')
 
-        cursor.execute(
-            """
-            INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase)
-            VALUES (%s, %s, %s, %s)
-            """, (equipo_local, equipo_visitante, fecha, fase)
-        )
+        query = """
+        INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (equipo_local, equipo_visitante, fecha, fase))
         conn.commit()
 
         return jsonify({'mensaje':'Partido agregado correctamente'}), 201
