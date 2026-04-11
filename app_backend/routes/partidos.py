@@ -3,7 +3,7 @@ from db import get_connection
 
 partidos_bp = Blueprint("partidos", __name__)
 
-@partidos_bp.route ("/partidos", methods=["GET"])
+@partidos_bp.route ("/", methods=["GET"])
 def lista_partidos():
     conn = get_connection()
     cursor = conn.cursor (dictionary=True)
@@ -86,8 +86,10 @@ def lista_partidos():
             
 
 
-@partidos_bp.route("/partidos", methods=["POST"])
-def crear_partido():    
+@partidos_bp.route("/", methods=["POST"])
+def crear_partido():
+    conn = None
+    cursor = None
     try:
         conn = get_connection() #coneccion con la db
         cursor = conn.cursor (dictionary=True) #El cursor me permite realizar consultas SQL, devuelve diccionarios en vez de tuplas.
@@ -117,9 +119,9 @@ def crear_partido():
     except Exception as e:
         return jsonify({'error': '%s' %e}), 500 
     finally:
-        if cursor:
+        if cursor is not None:
             cursor.close()
-        if conn:
+        if conn is not None:
             conn.close()
     
         
