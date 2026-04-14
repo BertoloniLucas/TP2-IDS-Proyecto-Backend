@@ -12,29 +12,33 @@ def lista_usuarios():
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
+
         limit = int(request.args.get("_limit", 10))
         offset = int(request.args.get("_offset", 0))
 
-        consulta_usuarios = """
-        SELECT padron, nombre, apellido
-        FROM usuarios
-        WHERE 1=1
-        """
+        
+        limit = max(1, min(limit, 100))
+        offset = max(0, offset)
 
-        consulta_cantidad = f"SELECT COUNT(*) as total from ({consulta_usuarios}) as sub"
-        cursor.execute(consulta_cantidad)
+        
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios")
         total = cursor.fetchone()["total"]
 
-        consulta_usuarios += " LIMIT %s OFFSET %s"
-        cursor.execute(consulta_usuarios, (limit, offset))
-        lista_usuarios = cursor.fetchall()
+        
+        query = """
+        SELECT id, nombre, email
+        FROM usuarios
+        LIMIT %s OFFSET %s
+        """
+        cursor.execute(query, (limit, offset))
+        lista = cursor.fetchall()
 
         usuarios = []
-        for usuario in lista_usuarios:
+        for u in lista:
             usuarios.append({
-                "padron": usuario["padron"],
-                "nombre": usuario["nombre"],
-                "apellido": usuario["apellido"]
+                "id": u["id"],
+                "nombre": u["nombre"],
+                "email": u["email"]
             })
 
         base_url = request.base_url
@@ -62,9 +66,9 @@ def lista_usuarios():
         return jsonify({"error": str(e)}), 500
 
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if conn is not None:
+        if conn:
             conn.close()
 
 
@@ -76,40 +80,65 @@ def crear_usuario():
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        datos = request.get_json()
-        campos = ["padron", "nombre", "apellido"]
 
+        datos = request.get_json()
+
+       
         if not datos:
-            return jsonify({"error": "campos incompletos"}), 400
+            return jsonify({"error": "Body vacío"}), 400
+
+        campos = ["nombre", "email"]
         for campo in campos:
             if campo not in datos:
-                return jsonify({"error": f"{campo} no especificado"}), 400
+                return jsonify({"error": f"Falta el campo {campo}"}), 400
 
-        padron = datos.get("padron")
         nombre = datos.get("nombre")
-        apellido = datos.get("apellido")
+        email = datos.get("email")
 
-        query_buscar = "SELECT * FROM usuarios WHERE padron = %s"
-        cursor.execute(query_buscar, (padron))
-        usuario_existente = cursor.fetchone()
+        
+        if not nombre:
+            return jsonify({"error": "Nombre inválido"}), 400
 
-        if usuario_existente:
-            return jsonify({"error": "Ya existe un usuario con ese padron"}), 400
+        if not email or "@" not in email:
+            return jsonify({"error": "Email inválido"}), 400
 
+        
+        query_buscar = "SELECT id FROM usuarios WHERE email = %s"
+        cursor.execute(query_buscar, (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Ya existe un usuario con ese email"}), 400
+
+        
         query = """
-        INSERT INTO usuarios (padron, nombre, apellido)
-        VALUES (%s, %s, %s)
+        INSERT INTO usuarios (nombre, email)
+        VALUES (%s, %s)
         """
-        cursor.execute(query, (padron, nombre, apellido))
+        cursor.execute(query, (nombre, email))
         conn.commit()
 
-        return jsonify({"mensaje": "Usuario agregado correctamente"}), 201
+        usuario_id = cursor.lastrowid
+
+        
+        response = jsonify({
+            "id": usuario_id,
+            "nombre": nombre,
+            "email": email
+        })
+        response.status_code = 201
+        response.headers["Location"] = f"/usuarios/{usuario_id}"
+
+        return response
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if conn is not None:
+        if conn:
             conn.close()
+
+
+
+            #santi 1 -- lastrowid es el id del ultimo registro de la bd
+            #santi 1 -- corregi algunas cosas de los ends y d la bd 14/04

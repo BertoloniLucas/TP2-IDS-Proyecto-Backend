@@ -5,12 +5,10 @@ partidos_bp = Blueprint("partidos", __name__)
 
 @partidos_bp.route ("/", methods=["GET"])
 def lista_partidos():
-    conn = None
-    cursor = None
+    conn = get_connection()
+    cursor = conn.cursor (dictionary=True)
 
     try:
-        conn = get_connection()
-        cursor = conn.cursor (dictionary=True)    
         fecha = request.args.get ("fecha")
         fase = request.args.get ("fase")
         equipo = request.args.get ("equipo")
@@ -60,7 +58,18 @@ def lista_partidos():
         base_url = request.base_url
 
         def build_url (new_offset):
-            return f"{base_url}?_limit={limit}&_offset={new_offset}"
+            params = f"_limit={limit}&_offset={new_offset}"
+
+            if equipo:
+                params += f"&equipo={equipo}"
+
+            if fecha:
+                params += f"&fecha={fecha}"
+
+            if fase:
+                params += f"&fase={fase}"  
+
+            return f"{base_url}?{params}"         
 
         links = {
             "_first" : {"href": build_url(0)},
@@ -68,7 +77,7 @@ def lista_partidos():
         }
 
         if offset > 0:
-            links ["_prev"] = {"href": build_url(max(total - limit, 0))}
+            links ["_prev"] = {"href": build_url(max(offset - limit, 0))}
 
 
         if offset + limit < total: 
@@ -83,7 +92,9 @@ def lista_partidos():
         return jsonify ({"error": str(e)}), 500
     
     finally:
+       if cursor:
         cursor.close()
+       if conn: 
         conn.close()
             
 
@@ -92,23 +103,54 @@ def lista_partidos():
 def crear_partido():
     conn = None
     cursor = None
+
     try:
-        conn = get_connection() #coneccion con la db
-        cursor = conn.cursor (dictionary=True) #El cursor me permite realizar consultas SQL, devuelve diccionarios en vez de tuplas.
-        datos = request.get_json() #obtengo los datos del body solicitado
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        datos = request.get_json()
         campos = ['equipo_local', 'equipo_visitante', 'fecha', 'fase']
+
         
         if not datos:
-            return (jsonify({'error': 'campos incompletos'}), 400)
+            return jsonify({"error": "Body vacío"}), 400
+
         for campo in campos:
             if campo not in datos:
-                return (jsonify({'error': '%s no especificado' %campo}), 400)
-        
+                return jsonify({"error": f"Falta el campo {campo}"}), 400
+
         equipo_local = datos.get('equipo_local')
         equipo_visitante = datos.get('equipo_visitante')
         fecha = datos.get('fecha')
         fase = datos.get('fase')
 
+       
+        if not equipo_local or not equipo_visitante:
+            return jsonify({"error": "Equipos inválidos"}), 400
+
+        if equipo_local == equipo_visitante:
+            return jsonify({"error": "Un equipo no puede jugar contra sí mismo"}), 400
+
+        if not fecha:
+            return jsonify({"error": "Fecha inválida"}), 400
+
+       
+        from datetime import datetime
+        try:
+            datetime.strptime(fecha, "%Y-%m-%d")
+        except:
+            return jsonify({"error": "Formato de fecha inválido (YYYY-MM-DD)"}), 400
+
+        
+        cursor.execute("SELECT id FROM equipos WHERE id = %s", (equipo_local,))
+        if not cursor.fetchone():
+            return jsonify({"error": "equipo_local no existe"}), 400
+
+        cursor.execute("SELECT id FROM equipos WHERE id = %s", (equipo_visitante,))
+        if not cursor.fetchone():
+            return jsonify({"error": "equipo_visitante no existe"}), 400
+
+        
         query = """
         INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase)
         VALUES (%s, %s, %s, %s)
@@ -116,61 +158,122 @@ def crear_partido():
         cursor.execute(query, (equipo_local, equipo_visitante, fecha, fase))
         conn.commit()
 
-        return jsonify({'mensaje':'Partido agregado correctamente'}), 201
+        partido_id = cursor.lastrowid
+
+        response = jsonify({
+            "id": partido_id,
+            "equipo_local": equipo_local,
+            "equipo_visitante": equipo_visitante,
+            "fecha": fecha,
+            "fase": fase
+        })
+        response.status_code = 201
+        response.headers["Location"] = f"/partidos/{partido_id}"
+
+        return response
+
     except Exception as e:
-        return jsonify({'error': '%s' %e}), 500 
+        return jsonify({"error": str(e)}), 500
+
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if conn is not None:
+        if conn:
             conn.close()
+            
     
         
 @partidos_bp.route("/<int:partido_id>", methods=["GET"])
 def obtener_partido(partido_id):
     conn = None
     cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
 
-        query = "SELECT * FROM partidos WHERE ID = %s"
+        query = """
+        SELECT
+            p.id,
+            p.equipo_local,
+            p.equipo_visitante,
+            p.fecha,
+            p.fase,
+            r.goles_local,
+            r.goles_visitante
+        FROM partidos p
+        LEFT JOIN resultados r ON p.id = r.partido_id
+        WHERE p.id = %s
+        """
+
         cursor.execute(query, (partido_id,))
         partido = cursor.fetchone()
 
         if not partido:
-            return jsonify({'error': 'Partido no encontrado'}), 404
-        else:
-            return jsonify(partido), 200
+            return jsonify({"error": "Partido no encontrado"}), 404
+
+        
+        resultado = None
+        if partido["goles_local"] is not None and partido["goles_visitante"] is not None:
+            resultado = {
+                "goles_local": partido["goles_local"],
+                "goles_visitante": partido["goles_visitante"]
+            }
+
+        response = {
+            "id": partido["id"],
+            "equipo_local": partido["equipo_local"],
+            "equipo_visitante": partido["equipo_visitante"],
+            "fecha": str(partido["fecha"]),
+            "fase": partido["fase"],
+            "resultado": resultado
+        }
+
+        return jsonify(response), 200
+
     except Exception as e:
-        return jsonify({'error':'%s' %e}), 500
+        return jsonify({"error": str(e)}), 500
+
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if conn is not None:
+        if conn:
             conn.close()
-    
+
+
 @partidos_bp.route("/<int:partido_id>", methods=["DELETE"])
 def eliminar_partido(partido_id):
     conn = None
     cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
 
-        query_eliminar = "DELETE FROM partidos WHERE ID = %s"
+        
+        cursor.execute("DELETE FROM resultados WHERE partido_id = %s", (partido_id,))
+        cursor.execute("DELETE FROM predicciones WHERE partido_id = %s", (partido_id,))
+
+        
+        query_eliminar = "DELETE FROM partidos WHERE id = %s"
         cursor.execute(query_eliminar, (partido_id,))
 
-        filas_afectadas = cursor.rowcount #verifico si el execute devolvio alguna fila.
-        if filas_afectadas == 0:
-            return jsonify({'error': 'Partido no encontrado'}), 404
-        else:
-            conn.commit()
-            return jsonify({'mensaje': 'Partido eliminado'}), 200
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Partido no encontrado"}), 404
+
+        conn.commit()
+
+        return jsonify({"mensaje": "Partido eliminado correctamente"}), 200
+
     except Exception as e:
-        return jsonify({'error': '%s' %e}), 500
+        return jsonify({"error": str(e)}), 500
+
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if conn is not None:
+        if conn:
             conn.close()
+
+
+             #santi 1 -- lastrowid es el id del ultimo registro de la bd
+            #santi 1 -- corregi algunas cosas de los ends y d la bd 14/04
