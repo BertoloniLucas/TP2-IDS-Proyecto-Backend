@@ -5,10 +5,12 @@ partidos_bp = Blueprint("partidos", __name__)
 
 @partidos_bp.route ("/", methods=["GET"])
 def lista_partidos():
-    conn = get_connection()
-    cursor = conn.cursor (dictionary=True)
+    conn = None
+    cursor = None
 
     try:
+        conn = get_connection()
+        cursor = conn.cursor (dictionary=True)    
         fecha = request.args.get ("fecha")
         fase = request.args.get ("fase")
         equipo = request.args.get ("equipo")
