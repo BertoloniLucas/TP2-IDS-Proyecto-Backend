@@ -277,5 +277,50 @@ def eliminar_partido(partido_id):
             conn.close()
 
 
-             #santi 1 -- lastrowid es el id del ultimo registro de la bd
+@partidos_bp.route ("/<int:partido_id>/resultados", methods=["PUT"])
+def actualizar_partido(partido_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        datos = request.get_json()
+        if not datos:
+            return jsonify({"error": "Body vacío"}), 400
+        goles_local = datos.get("goles_local")
+        goles_visitante = datos.get("goles_visitante")
+        if goles_local is None or goles_visitante is None:
+            return jsonify({"error": "Faltan goles_local o goles_visitante"}), 400
+        
+        if goles_local < 0 or goles_visitante < 0:
+            return jsonify({"error": "Los goles no pueden ser negativos"}), 400
+        cursor.execute("SELECT id FROM partidos WHERE id = %s", (partido_id,))
+        if not cursor.fetchone():
+            return jsonify({"error": "Partido no encontrado"}), 404
+        
+        if resultado_existe is not None:
+            query_actualizar = """
+            UPDATE resultados
+            SET goles_local = %s, goles_visitante = %s
+            WHERE partido_id = %s
+            """
+            cursor.execute(query_actualizar, (goles_local, goles_visitante, partido_id))
+        else:
+            query_insertar = """
+            INSERT INTO resultados (partido_id, goles_local, goles_visitante)
+            VALUES (%s, %s, %s)
+            """
+            cursor.execute(query_insertar, (partido_id, goles_local, goles_visitante))
+        conn.commit()
+        return jsonify({"mensaje": "Resultado actualizado correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        
+
             
