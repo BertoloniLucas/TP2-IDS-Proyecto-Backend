@@ -139,6 +139,33 @@ def crear_usuario():
             conn.close()
 
 
+@usuarios_bp.route("/<int:usuario_id>", methods=["GET"])
+def obtener_usuario(usuario_id):
+    conn = None
+    cursor = None
 
-            #santi 1 -- lastrowid es el id del ultimo registro de la bd
-            #santi 1 -- corregi algunas cosas de los ends y d la bd 14/04
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+        SELECT id, nombre, email
+        FROM usuarios
+        WHERE id = %s
+        """
+        cursor.execute(query, (usuario_id,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        
+        return jsonify(usuario), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+            
