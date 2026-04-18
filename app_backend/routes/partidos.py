@@ -291,20 +291,27 @@ def actualizar_partido(partido_id):
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
         datos = request.get_json()
+
         if not datos:
             return jsonify({"error": "Body vacío"}), 400
+        
         goles_local = datos.get("goles_local")
         goles_visitante = datos.get("goles_visitante")
+
         if goles_local is None or goles_visitante is None:
             return jsonify({"error": "Faltan goles_local o goles_visitante"}), 400
         
         if goles_local < 0 or goles_visitante < 0:
             return jsonify({"error": "Los goles no pueden ser negativos"}), 400
-        cursor.execute("SELECT id FROM partidos WHERE id = %s", (partido_id,))
+        
+        cursor.execute("SELECT ID FROM partidos WHERE ID = %s", (partido_id,))
         if not cursor.fetchone():
             return jsonify({"error": "Partido no encontrado"}), 404
         
-        if resultado_existe is not None:
+        cursor.execute("SELECT * FROM resultados WHERE partido_id = %s", (partido_id,))
+        resultado = cursor.fetchone()
+        if resultado is not None:
+            id_resultado = resultado["ID"]
             query_actualizar = """
             UPDATE resultados
             SET goles_local = %s, goles_visitante = %s
@@ -317,8 +324,18 @@ def actualizar_partido(partido_id):
             VALUES (%s, %s, %s)
             """
             cursor.execute(query_insertar, (partido_id, goles_local, goles_visitante))
+            id_resultado = cursor.lastrowid
         conn.commit()
-        return jsonify({"mensaje": "Resultado actualizado correctamente"}), 200
+        response = {
+            "ID": id_resultado,
+            "id_partido": partido_id,
+            "goles_local": goles_local,
+            "goles_visitante": goles_visitante
+        }
+        return jsonify({
+            "mensaje": "Resultado actualizado correctamente",
+            "resultado": response
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
