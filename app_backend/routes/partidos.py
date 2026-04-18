@@ -49,10 +49,15 @@ def lista_partidos():
 
         partidos = []
         for partido in lista_partidos:
+            cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_local"],))
+            equipo_local = cursor.fetchone()["equipo"]
+            cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_visitante"],))
+            equipo_visitante = cursor.fetchone()["equipo"]
+
             partidos.append ({
                 "ID" : partido["ID"],
-                "equipo_local" : partido ["equipo_local"],
-                "equipo_visitante" : partido ["equipo_visitante"],
+                "equipo_local" : equipo_local,
+                "equipo_visitante" : equipo_visitante,
                 "fecha" : str(partido["fecha"]),
                 "fase" : partido ["fase"]
             })
