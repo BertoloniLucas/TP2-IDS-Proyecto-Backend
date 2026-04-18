@@ -112,7 +112,6 @@ def crear_partido():
 
         datos = request.get_json()
         campos = ['equipo_local', 'equipo_visitante', 'fecha', 'fase']
-
         
         if not datos:
             return jsonify({"error": "Body vacío"}), 400
@@ -125,7 +124,6 @@ def crear_partido():
         equipo_visitante = datos.get('equipo_visitante')
         fecha = datos.get('fecha')
         fase = datos.get('fase')
-
        
         if not equipo_local or not equipo_visitante:
             return jsonify({"error": "Equipos inválidos"}), 400
@@ -136,36 +134,37 @@ def crear_partido():
         if not fecha:
             return jsonify({"error": "Fecha inválida"}), 400
 
-       
         from datetime import datetime
         try:
             datetime.strptime(fecha, "%Y-%m-%d")
         except:
             return jsonify({"error": "Formato de fecha inválido (YYYY-MM-DD)"}), 400
 
-        
-        cursor.execute("SELECT id FROM equipos WHERE id = %s", (equipo_local,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT ID FROM equipos WHERE equipo = %s", (equipo_local,))
+        result_equipo_local = cursor.fetchone()
+        if not result_equipo_local:
             return jsonify({"error": "equipo_local no existe"}), 400
+        id_equipo_local = result_equipo_local["ID"]
 
-        cursor.execute("SELECT id FROM equipos WHERE id = %s", (equipo_visitante,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT ID FROM equipos WHERE equipo = %s", (equipo_visitante,))
+        result_equipo_visitante = cursor.fetchone()
+        if not result_equipo_visitante:
             return jsonify({"error": "equipo_visitante no existe"}), 400
+        id_equipo_visitante = result_equipo_visitante["ID"]
 
-        
         query = """
         INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase)
         VALUES (%s, %s, %s, %s)
         """
-        cursor.execute(query, (equipo_local, equipo_visitante, fecha, fase))
+        cursor.execute(query, (id_equipo_local, id_equipo_visitante, fecha, fase))
         conn.commit()
 
         partido_id = cursor.lastrowid
 
         response = jsonify({
-            "id": partido_id,
-            "equipo_local": equipo_local,
-            "equipo_visitante": equipo_visitante,
+            "ID": partido_id,
+            "equipo_local": id_equipo_local,
+            "equipo_visitante": id_equipo_visitante,
             "fecha": fecha,
             "fase": fase
         })
@@ -196,7 +195,7 @@ def obtener_partido(partido_id):
 
         query = """
         SELECT
-            p.id,
+            p.ID,
             p.equipo_local,
             p.equipo_visitante,
             p.fecha,
@@ -213,7 +212,6 @@ def obtener_partido(partido_id):
 
         if not partido:
             return jsonify({"error": "Partido no encontrado"}), 404
-
         
         resultado = None
         if partido["goles_local"] is not None and partido["goles_visitante"] is not None:
@@ -222,10 +220,15 @@ def obtener_partido(partido_id):
                 "goles_visitante": partido["goles_visitante"]
             }
 
+        cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_local"],))
+        equipo_local = cursor.fetchone()["equipo"]
+        cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_visitante"],))
+        equipo_visitante = cursor.fetchone()["equipo"]
+        
         response = {
-            "id": partido["id"],
-            "equipo_local": partido["equipo_local"],
-            "equipo_visitante": partido["equipo_visitante"],
+            "id": partido["ID"],
+            "equipo_local": equipo_local,
+            "equipo_visitante": equipo_visitante,
             "fecha": str(partido["fecha"]),
             "fase": partido["fase"],
             "resultado": resultado
