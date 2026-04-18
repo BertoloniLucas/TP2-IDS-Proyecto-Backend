@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-
+from db import get_connection
 rankng_bp = Blueprint("ranking", __name__)
 
 @rankng_bp.route ("/", methods=["GET"])
@@ -18,14 +18,14 @@ def obtener_partido():
         query = """ 
                 SELECT
                 u.id,
-                u,nombre,
+                u.nombre,
                 SUM(
                     CASE    
-                            WHEN p.prediccion_local == r.goles_local
-                            AND p.prediccion_visitante == r.goles_visitante THEN 3
+                            WHEN p.prediccion_local = r.goles_local
+                            AND p.prediccion_visitante = r.goles_visitante THEN 3
 
                             WHEN (p.prediccion_local > p.prediccion_visitante AND r.goles_local > r.goles_visitante)
-                                (p.prediccion_local < p.prediccion_visitante AND r.goles_local < r.goles_visitante)
+                            OR (p.prediccion_local < p.prediccion_visitante AND r.goles_local < r.goles_visitante)
                             OR (p.prediccion_local = p.prediccion_visitante AND r.goles_local = r.goles_visitante) THEN 1
                             ELSE 0
                     END
@@ -40,8 +40,8 @@ def obtener_partido():
         cursor.execute(query, (limit, offset))
         lista = cursor.fetchall()
 
-        return jsonify(ranking), 200
-        
+        #return jsonify(ranking), 200
+        return jsonify(lista), 200        
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
