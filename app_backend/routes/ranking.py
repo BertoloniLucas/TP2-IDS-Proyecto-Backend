@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request
 from db import get_connection
-rankng_bp = Blueprint("ranking", __name__)
+ranking_bp = Blueprint("ranking", __name__)
 
-@rankng_bp.route ("/", methods=["GET"])
-def obtener_partido():
+@ranking_bp.route ("/", methods=["GET"])
+def obtener_ranking():
     
     conn = None
     cursor = None
