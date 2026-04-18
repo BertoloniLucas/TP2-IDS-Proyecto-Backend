@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from db import get_connection
+from datetime import datetime
 
 partidos_bp = Blueprint("partidos", __name__)
 
@@ -136,7 +137,6 @@ def crear_partido():
         if not fecha:
             return jsonify({"error": "Fecha inválida"}), 400
 
-        from datetime import datetime
         try:
             datetime.strptime(fecha, "%Y-%m-%d")
         except:
@@ -345,4 +345,65 @@ def actualizar_partido(partido_id):
             conn.close()
         
 
-            
+@partidos_bp.route("/<int:partido_id>/prediccion", methods=["POST"])
+def registrar_prediccion(partido_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary = True)
+
+        datos = request.get_json()
+        if not datos:
+            return jsonify({"error": "body no completado"}), 404
+        campos = ["id_usuario", "local", "visitante"]
+        for campo in campos:
+            if campo not in datos:
+                return jsonify({"error": "%s no especificado" %campo}), 404
+
+        id_usuario = datos.get("id_usuario")
+        goles_local = datos.get("local")
+        goles_visitante = datos.get("visitante")
+
+        cursor.execute("SELECT * from partidos WHERE ID = %s", (partido_id,))
+        partido = cursor.fetchone()
+        if not partido:
+            return jsonify({"error": "el partido no existe"}), 404
+        if partido["fecha"] < datetime.now():
+            return jsonify({"error": "el partido ya se jugo"}), 400
+        cursor.execute("SELECT ID FROM usuarios WHERE ID = %s", (id_usuario,))
+        if cursor.fetchone() is None:
+            return jsonify({"error": "el usuario no existe"}), 404
+        
+        query_verificacion = "SELECT * FROM predicciones WHERE partido_id = %s AND usuario_id = %s"
+        cursor.execute(query_verificacion, (partido_id, id_usuario,))
+        if cursor.fetchone():
+            return jsonify({"error": "el usuario ya tiene una prediccion cargada"}), 400
+
+        query = """
+        INSERT INTO predicciones
+        (partido_id, prediccion_local, prediccion_visitante, usuario_id)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (partido_id, goles_local, goles_visitante, id_usuario))
+        id_prediccion = cursor.lastrowid
+        conn.commit()
+
+        response = {
+            "ID": id_prediccion,
+            "partido_id": partido_id,
+            "local": goles_local,
+            "visitante": goles_visitante,
+            "usuario_id": id_usuario
+        }
+        return jsonify({
+            "mensaje": "prediccion agregada correctamente",
+            "prediccion": response
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
