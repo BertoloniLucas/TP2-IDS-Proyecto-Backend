@@ -18,23 +18,25 @@ def lista_partidos():
         offset = int (request.args.get("_offset", 0))
 
         consulta_partidos= """
-        SELECT ID, equipo_local, equipo_visitante, fecha, fase
-        FROM partidos
+        SELECT p.ID, eq_local.equipo AS equipo_local, eq_visitante.equipo AS equipo_visitante, p.fecha, p.fase
+        FROM partidos p
+        INNER JOIN equipos eq_local ON p.equipo_local = eq_local.ID
+        INNER JOIN equipos eq_visitante on p.equipo_visitante = eq_visitante.ID
         WHERE 1=1
         """
 
         valores = []
 
         if equipo:
-            consulta_partidos += " AND (equipo_local = %s OR equipo_visitante = %s)"
+            consulta_partidos += " AND (eq_local.equipo = %s OR eq_visitante.equipo = %s)"
             valores.extend ([equipo, equipo])
 
         if fecha:
-            consulta_partidos += " AND fecha = %s"
+            consulta_partidos += " AND p.fecha = %s"
             valores.append (fecha)
 
         if fase:
-            consulta_partidos += " AND fase = %s"
+            consulta_partidos += " AND p.fase = %s"
             valores.append (fase)
 
         consulta_cantidad_partidos = f"SELECT COUNT(*) as total from ({consulta_partidos}) as sub" 
@@ -49,15 +51,10 @@ def lista_partidos():
 
         partidos = []
         for partido in lista_partidos:
-            cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_local"],))
-            equipo_local = cursor.fetchone()["equipo"]
-            cursor.execute("SELECT equipo FROM equipos WHERE ID = %s", (partido["equipo_visitante"],))
-            equipo_visitante = cursor.fetchone()["equipo"]
-
             partidos.append ({
                 "ID" : partido["ID"],
-                "equipo_local" : equipo_local,
-                "equipo_visitante" : equipo_visitante,
+                "equipo_local" : partido["equipo_local"],
+                "equipo_visitante" : partido["equipo_visitante"],
                 "fecha" : str(partido["fecha"]),
                 "fase" : partido ["fase"]
             })
