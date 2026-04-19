@@ -499,11 +499,3 @@ Posibles códigos de estado:
 
 - `200`: OK.
 - `500`: error inesperado.
-
-## Observaciones finales
-
-- El proyecto usa Flask y `flask_cors`, por lo que las respuestas pueden consumirse desde un frontend separado.
-- El comportamiento documentado arriba sigue la implementación actual de las rutas.
-- Si querés, también puedo agregar una sección con ejemplos de consumo usando `curl` o Postman para cada endpoint.
-
-
