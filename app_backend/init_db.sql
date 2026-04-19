@@ -116,3 +116,13 @@ INSERT INTO partidos (equipo_local, equipo_visitante, fecha, fase, estadio, sede
 (15, 18, '2026-06-22 15:00:00', 'Fase de Grupos', 'AT&T Stadium', 'Dallas'),
 (16, 19, '2026-06-23 18:00:00', 'Fase de Grupos', 'Estadio BBVA', 'Monterrey'),
 (8, 20, '2026-06-23 14:00:00', 'Fase de Grupos', 'Mercedes-Benz Stadium', 'Atlanta');
+-- santi 2 " falta agregar los INSERTS TO en todas las tablas para probar el funcionamiento del backend. "
+
+-- santi 1 "al final para el ranking no hace falta db se hace con joins con las tablas q ya tenemos"
+ --santi 1 -- lastrowid es el id del ultimo registro de la bd
+            --santi 1 -- corregi algunas cosas de los ends y d la bd 14/04
+
+-- Comentatios de Lucas: 
+-- 1. No es tan buena práctica poner el ID de cada entidad con mayúsculas
+-- 2. En la tabla equipos, no es buena práctica poner el campo equipo porque es redundante con el nombre de la entidad. Es mejor cambiarlo a nombre, o nombre_equipo. 
+-- 3. No entiendo por qué hacen iNSERT INTO de clubes argentinos.
