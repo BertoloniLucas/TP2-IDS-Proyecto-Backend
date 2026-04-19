@@ -44,7 +44,7 @@ def lista_partidos():
         cursor.execute(consulta_cantidad_partidos, valores) 
         total = cursor.fetchone()["total"]
 
-        consulta_partidos += "LIMIT %s OFFSET %s"
+        consulta_partidos += " LIMIT %s OFFSET %s"
         valores.extend([limit, offset])  
 
         cursor.execute(consulta_partidos, valores)
@@ -268,6 +268,93 @@ def eliminar_partido(partido_id):
         conn.commit()
 
         return jsonify({"mensaje": "Partido eliminado correctamente"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@partidos_bp.route("/<int:partido_id>", methods=["PATCH"])
+def modificar_partido(partido_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        datos = request.get_json()
+
+        if not datos:
+            return jsonify({"error": "Body vacío"}), 400
+
+        cursor.execute("SELECT ID FROM partidos WHERE ID = %s", (partido_id,))
+        partido = cursor.fetchone()
+        if not partido:
+            return jsonify({"error": "Partido no encontrado"}), 404
+
+        campos = []
+        valores = []
+
+        if "equipo_local" in datos:
+            equipo_local = datos.get("equipo_local")
+            cursor.execute("SELECT ID FROM equipos WHERE equipo = %s", (equipo_local,))
+            result_equipo_local = cursor.fetchone()
+
+            if not result_equipo_local:
+                return jsonify({"error": "equipo_local no existe"}), 400
+
+            campos.append("equipo_local = %s")
+            valores.append(result_equipo_local["ID"])
+
+        if "equipo_visitante" in datos:
+            equipo_visitante = datos.get("equipo_visitante")
+            cursor.execute("SELECT ID FROM equipos WHERE equipo = %s", (equipo_visitante,))
+            result_equipo_visitante = cursor.fetchone()
+
+            if not result_equipo_visitante:
+                return jsonify({"error": "equipo_visitante no existe"}), 400
+
+            campos.append("equipo_visitante = %s")
+            valores.append(result_equipo_visitante["ID"])
+
+        if "fecha" in datos:
+            fecha = datos.get("fecha")
+            try:
+                datetime.strptime(fecha, "%Y-%m-%d")
+            except:
+                return jsonify({"error": "Formato de fecha inválido (YYYY-MM-DD)"}), 400
+
+            campos.append("fecha = %s")
+            valores.append(fecha)
+
+        if "fase" in datos:
+            fase = datos.get("fase")
+            campos.append("fase = %s")
+            valores.append(fase)
+
+        if not campos:
+            return jsonify({"error": "No hay campos para actualizar"}), 400
+
+        if "equipo_local" in datos and "equipo_visitante" in datos:
+            if datos.get("equipo_local") == datos.get("equipo_visitante"):
+                return jsonify({"error": "Un equipo no puede jugar contra sí mismo"}), 400
+
+        query = f"""
+        UPDATE partidos
+        SET {", ".join(campos)}
+        WHERE ID = %s
+        """
+        valores.append(partido_id)
+
+        cursor.execute(query, tuple(valores))
+        conn.commit()
+
+        return jsonify({"mensaje": "Partido actualizado correctamente"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -188,7 +188,7 @@ def actualizar_usuario(usuario_id):
             return jsonify({"error": "Nombre inválido"}), 400
         if not email or "@" not in email:
             return jsonify({"error": "Email inválido"}), 400
-        cursor.execute("SELECT id FROM usuarios WHERE id = %s", (usuario_id))
+        cursor.execute("SELECT id FROM usuarios WHERE id = %s", (usuario_id,))
         if not cursor.fetchone():
             return jsonify({"error": "Usuario no encontrado"}), 404
         cursor.execute("SELECT id FROM usuarios WHERE email = %s AND id != %s", (email, usuario_id))
