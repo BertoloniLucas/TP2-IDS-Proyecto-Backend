@@ -169,3 +169,71 @@ def obtener_usuario(usuario_id):
         if conn:
             conn.close()
             
+@usuarios_bp.route("/<int:usuario_id>", methods=["PUT"])
+def actualizar_usuario(usuario_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        datos = request.get_json()
+        if not datos:
+            return jsonify({"error": "Body vacío"}), 400
+        if "nombre" not in datos and "email" not in datos:
+            return jsonify({"error": "Faltan campos obligatorios"}), 400
+        nombre = datos.get("nombre")
+        email = datos.get("email")
+        if not nombre:
+            return jsonify({"error": "Nombre inválido"}), 400
+        if not email or "@" not in email:
+            return jsonify({"error": "Email inválido"}), 400
+        cursor.execute("SELECT id FROM usuarios WHERE id = %s", (usuario_id))
+        if not cursor.fetchone():
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        cursor.execute("SELECT id FROM usuarios WHERE email = %s AND id != %s", (email, usuario_id))
+        if cursor.fetchone():
+            return jsonify({"error": "Ya existe un usuario con ese email"}), 400
+        query = """
+        UPDATE usuarios
+        SET nombre = %s, email = %s
+        WHERE id = %s
+        """
+        cursor.execute(query, (nombre, email, usuario_id))
+        conn.commit()
+        return jsonify({"message": "Usuario actualizado correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()    
+
+@usuarios_bp.route("/<int:usuario_id>", methods=["DELETE"])
+def eliminar_usuario(usuario_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM usuarios WHERE id = %s", (usuario_id,))
+        if not cursor.fetchone():   
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        cursor.execute("DELETE FROM predicciones WHERE usuario_id = %s", (usuario_id,))
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (usuario_id,))
+        conn.commit()
+        return jsonify({"message": "Usuario eliminado correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()    
+           
+        
+        
+
+
