@@ -6,8 +6,8 @@ partidos_bp = Blueprint("partidos", __name__)
 
 @partidos_bp.route ("/", methods=["GET"])
 def lista_partidos():
-    conn = None
-    cursor = None
+    conn = None # Por qué lo estamos inicializando en None?
+    cursor = None # Por qué lo estamos inicializando en None?
 
     try:
         conn = get_connection()
@@ -15,8 +15,8 @@ def lista_partidos():
         fecha = request.args.get ("fecha")
         fase = request.args.get ("fase")
         equipo = request.args.get ("equipo")
-        limit = int (request.args.get("_limit", 10))
-        offset = int (request.args.get("_offset", 0))
+        limit = int(request.args.get("_limit", 10))
+        offset = int(request.args.get("_offset", 0))
 
         consulta_partidos= """
         SELECT p.ID, eq_local.equipo AS equipo_local, eq_visitante.equipo AS equipo_visitante, p.fecha, p.fase
@@ -30,24 +30,24 @@ def lista_partidos():
 
         if equipo:
             consulta_partidos += " AND (eq_local.equipo = %s OR eq_visitante.equipo = %s)"
-            valores.extend ([equipo, equipo])
+            valores.extend([equipo, equipo])
 
         if fecha:
             consulta_partidos += " AND p.fecha = %s"
-            valores.append (fecha)
+            valores.append(fecha)
 
         if fase:
             consulta_partidos += " AND p.fase = %s"
-            valores.append (fase)
+            valores.append(fase)
 
         consulta_cantidad_partidos = f"SELECT COUNT(*) as total from ({consulta_partidos}) as sub" 
         cursor.execute(consulta_cantidad_partidos, valores) 
         total = cursor.fetchone()["total"]
 
-        consulta_partidos += " LIMIT %s OFFSET %s"
-        valores.extend ([limit, offset])  
+        consulta_partidos += "LIMIT %s OFFSET %s"
+        valores.extend([limit, offset])  
 
-        cursor.execute (consulta_partidos, valores)
+        cursor.execute(consulta_partidos, valores)
         lista_partidos = cursor.fetchall()
 
         partidos = []
@@ -94,7 +94,7 @@ def lista_partidos():
         }), 200
 
     except Exception as e:
-        return jsonify ({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
     
     finally:
        if cursor:
@@ -102,7 +102,6 @@ def lista_partidos():
        if conn: 
         conn.close()
             
-
 
 @partidos_bp.route("/", methods=["POST"])
 def crear_partido():
@@ -138,7 +137,7 @@ def crear_partido():
             return jsonify({"error": "Fecha inválida"}), 400
 
         try:
-            datetime.strptime(fecha, "%Y-%m-%d")
+            datetime.strptime(fecha, "%Y-%m-%d") # Y esto? No se debería guardar en algún lado o variable?
         except:
             return jsonify({"error": "Formato de fecha inválido (YYYY-MM-DD)"}), 400
 
@@ -171,7 +170,7 @@ def crear_partido():
             "fase": fase
         })
         response.status_code = 201
-        response.headers["Location"] = f"/partidos/{partido_id}"
+        response.headers["Location"] = f"/partidos/{partido_id}" # mmm, no creo que haga falta esto..
 
         return response
 
@@ -257,11 +256,9 @@ def eliminar_partido(partido_id):
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
 
-        
         cursor.execute("DELETE FROM resultados WHERE partido_id = %s", (partido_id,))
-        cursor.execute("DELETE FROM predicciones WHERE partido_id = %s", (partido_id,))
+        cursor.execute("DELETE FROM predicciones WHERE partido_id = %s", (partido_id,)) #Creo que no hace falta borrar a mano esto si ya esta configurado el ON DELETE CASCADE
 
-        
         query_eliminar = "DELETE FROM partidos WHERE id = %s"
         cursor.execute(query_eliminar, (partido_id,))
 
