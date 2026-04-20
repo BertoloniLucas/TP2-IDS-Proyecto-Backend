@@ -6,8 +6,8 @@ partidos_bp = Blueprint("partidos", __name__)
 
 @partidos_bp.route ("/", methods=["GET"])
 def lista_partidos():
-    conn = None # Por qué lo estamos inicializando en None?
-    cursor = None # Por qué lo estamos inicializando en None?
+    conn = None 
+    cursor = None 
 
     try:
         conn = get_connection()
@@ -137,7 +137,7 @@ def crear_partido():
             return jsonify({"error": "Fecha inválida"}), 400
 
         try:
-            datetime.strptime(fecha, "%Y-%m-%d") # Y esto? No se debería guardar en algún lado o variable?
+            datetime.strptime(fecha, "%Y-%m-%d")
         except:
             return jsonify({"error": "Formato de fecha inválido (YYYY-MM-DD)"}), 400
 
@@ -170,7 +170,7 @@ def crear_partido():
             "fase": fase
         })
         response.status_code = 201
-        response.headers["Location"] = f"/partidos/{partido_id}" # mmm, no creo que haga falta esto..
+        response.headers["Location"] = f"/partidos/{partido_id}" 
 
         return response
 
@@ -257,12 +257,12 @@ def eliminar_partido(partido_id):
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute("DELETE FROM resultados WHERE partido_id = %s", (partido_id,))
-        cursor.execute("DELETE FROM predicciones WHERE partido_id = %s", (partido_id,)) #Creo que no hace falta borrar a mano esto si ya esta configurado el ON DELETE CASCADE
+        cursor.execute("DELETE FROM predicciones WHERE partido_id = %s", (partido_id,))
 
         query_eliminar = "DELETE FROM partidos WHERE id = %s"
         cursor.execute(query_eliminar, (partido_id,))
 
-        if cursor.rowcount == 0:
+        if cursor.rowcount == 0: 
             return jsonify({"error": "Partido no encontrado"}), 404
 
         conn.commit()
@@ -463,7 +463,7 @@ def registrar_prediccion(partido_id):
         cursor.execute(query_verificacion, (partido_id, id_usuario,))
         if cursor.fetchone():
             return jsonify({"error": "el usuario ya tiene una prediccion cargada"}), 400
-
+    
         query = """
         INSERT INTO predicciones
         (partido_id, prediccion_local, prediccion_visitante, usuario_id)
