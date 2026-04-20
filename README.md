@@ -502,7 +502,7 @@ Posibles códigos de estado:
 
 ## Aclaraciones del equipo: 
 
-Creemos que una mejora a imlpementar podría ser la de agregar un ´ON DELETE CASCADE´
+Creemos que una mejora a imlpementar podría ser la de agregar un `ON DELETE CASCADE`
 para no tener que ir borrando registros asociados a otro registro que haya sido 
 eliminado.
 
